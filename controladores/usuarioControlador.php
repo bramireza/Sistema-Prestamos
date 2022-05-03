@@ -109,7 +109,8 @@
 				exit();
 			}
 
-			if(mainModel::verificar_datos("[a-zA-Z0-9$@.-]{7,100}",$clave1) || mainModel::verificar_datos("[a-zA-Z0-9$@.-]{7,100}",$clave2)){
+			if(mainModel::verificar_datos("[a-zA-Z0-9$@.-]{7,100}",$clave1) || 
+        mainModel::verificar_datos("[a-zA-Z0-9$@.-]{7,100}",$clave2)){
 				$alerta=[
 					"Alerta"=>"simple",
 					"Titulo"=>"Ocurrió un error inesperado",

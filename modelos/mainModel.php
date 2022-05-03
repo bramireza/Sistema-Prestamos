@@ -10,7 +10,7 @@
 
 		/*--------- Funcion conectar a BD ---------*/
 		protected static function conectar(){
-			$conexion = new PDO(SGBD, USER, PASS);
+			$conexion = new PDO(SGBD, USER, PASSWORD);
 			$conexion->exec("SET CHARACTER SET utf8");
 			return $conexion;
 		}
