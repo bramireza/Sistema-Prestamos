@@ -22,6 +22,7 @@
             confirmButtonText: "Aceptar"
           });
         </script>';
+        exit();
       }
       
       if(mainModel::verificar_datos("[a-zA-Z0-9]{1,35}", $usuario)){
@@ -34,6 +35,7 @@
             confirmButtonText: "Aceptar"
           });
         </script>';
+        exit();
       }
       if(mainModel::verificar_datos("[a-zA-Z0-9$@.-]{7,100}", $clave)){
         echo '
@@ -45,6 +47,7 @@
             confirmButtonText: "Aceptar"
           });
         </script>';
+        exit();
       }
 
       $clave=mainModel::encryption($clave);
@@ -83,5 +86,36 @@
       }
     }
 
-    
+    public function forzar_cierre_sesion_controlador(){
+      session_unset();
+      session_destroy();
+      if(headers_sent()){
+        return "<script> window.location.href='".SERVERURL."login/'; </script>";
+      } else{
+        return header("Location: ".SERVERURL."login/");
+      }
+    }
+
+    public function cerrar_sesion_controlador(){
+      session_start(["name" => "SPM"]);
+      $token=mainModel::decryption($_POST["token"]);
+      $usuario=mainModel::decryption($_POST["usuario"]);
+
+      if($token==$_SESSION["token_spm"] && $usuario==$_SESSION["usuario_spm"]){
+        session_unset();
+        session_destroy();
+        $alerta=[
+          "Alerta"=>"redireccionar",
+          "URL"=>SERVERURL."login/"
+        ];
+      }else{
+        $alerta=[
+          "Alerta"=>"simple",
+          "Titulo"=>"Ocurrió un error inesperado",
+          "Texto"=>"No se pudo cerrar la sesión en el sistema",
+          "Tipo"=>"error"
+        ];
+      }
+      echo json_encode($alerta);
+    }
   }
