@@ -289,6 +289,8 @@
 
 			if($total >= 1 && $pagina <= $Npaginas){
 				$contador = $inicio+1;
+				$reg_inicio = $inicio+1;
+
 				foreach ($datos as $rows) {
 					$tabla.='
 						<tr class="text-center" >
@@ -299,13 +301,17 @@
 							<td>'.$rows["usuario_usuario"].'</td>
 							<td>'.$rows["usuario_email"].'</td>
 							<td>
-								<a href="<?php echo SERVERURL;?>user-update/" class="btn btn-success">
+								<a href="'.SERVERURL.'user-update/'.
+								mainModel::encryption($rows["usuario_id"]).'/" class="btn btn-success">
 										<i class="fas fa-sync-alt"></i>	
 								</a>
 							</td>
 							<td>
-								<form action="">
-									<button type="button" class="btn btn-warning">
+								<form class="FormularioAjax" action="'.SERVERURL.'ajax/usuarioAjax.php" 
+								method="POST" data-form="delete" autocomplete="off">
+									<input type="hidden" name="usuario_id_del" value="'.
+									mainModel::encryption($rows["usuario_id"]).'">
+									<button type="submit" class="btn btn-warning">
 											<i class="far fa-trash-alt"></i>
 									</button>
 								</form>
@@ -314,10 +320,11 @@
 					';
 					$contador++;
 				}
+				$reg_final=$contador-1;
 			}else{
 				if ($total>=1) {
 					$tabla.='<tr class="text-center" ><td colspan="8"> 
-					<a href=""'.$url.'" class="btn btn-raised btn-primary btn-sm">Click para recargar el listado</a>
+					<a href="'.$url.'" class="btn btn-raised btn-primary btn-sm">Click para recargar el listado</a>
 					</td></tr>';
 				} else {
 					$tabla.='<tr class="text-center" >
@@ -329,10 +336,85 @@
 			$tabla.='</tbody></table></div>';
 
 			if($total>=1 && $pagina<=$Npaginas){
-				$tabla.=mainModel::paginador_tablas($pagina,$Npaginas,$url,1);
+				$tabla.='<p class="text-right">Mostrando usuario '.$reg_inicio.' al '.$reg_final.' de un total de '.$total.'</p>';
+			}
+
+			if($total>=1 && $pagina<=$Npaginas){
+				$tabla.=mainModel::paginador_tablas($pagina,$Npaginas,$url,5);
 			}
 
 			return $tabla;
 		} /* Fin controlador */
 
+		public function eliminar_usuario_controlador(){
+			$id=mainModel::decryption($_POST["usuario_id_del"]);
+			$id=mainModel::limpiar_cadena($id);
+	
+			if($id==1){
+				$alerta=[
+					"Alerta"=>"simple",
+					"Titulo"=>"Ocurrió un error inesperado",
+					"Texto"=>"No podemos eliminar el usuario principal del sistema",
+					"Tipo"=>"error"
+				];
+				echo json_encode($alerta);
+				exit();
+			}
+
+			$check_usuario=mainModel::ejecutar_consulta_simple("SELECT usuario_id FROM usuario WHERE usuario_id='$id'");
+			if($check_usuario->rowCount()<=0){
+				$alerta=[
+					"Alerta"=>"simple",
+					"Titulo"=>"Ocurrió un error inesperado",
+					"Texto"=>"El usuario que intenta eliminar no existe en el sistema",
+					"Tipo"=>"error"
+				];
+				echo json_encode($alerta);
+				exit();
+			}
+						
+			$check_prestamos=mainModel::ejecutar_consulta_simple("SELECT usuario_id FROM prestamo WHERE usuario_id='$id' LIMIT 1");
+			if($check_prestamos->rowCount()>0){
+				$alerta=[
+					"Alerta"=>"simple",
+					"Titulo"=>"Ocurrió un error inesperado",
+					"Texto"=>"No podemos eliminar este usuario debido a que tiene prestamos asociados,
+					recomendamos deshabilitar el usuario si ya no sera utilizado",
+					"Tipo"=>"error"
+				];
+				echo json_encode($alerta);
+				exit();
+			}
+
+			session_start(["name"=>"SPM"]);
+			if($_SESSION["privilegio_spm"]!=1){
+				$alerta=[
+					"Alerta"=>"simple",
+					"Titulo"=>"Ocurrió un error inesperado",
+					"Texto"=>"No tienes los permisos necesarios para realizar esta operación",
+					"Tipo"=>"error"
+				];
+				echo json_encode($alerta);
+				exit();
+			}
+
+			$eliminar_usuario=usuarioModelo::eliminar_usuario_modelo($id);
+
+			if($eliminar_usuario->rowCount()==1){
+				$alerta=[
+					"Alerta"=>"recargar",
+					"Titulo"=>"Usuario eliminado",
+					"Texto"=>"El usuario ha sido eliminado exitosamente del sistema",
+					"Tipo"=>"error"
+				];
+			}else{
+				$alerta=[
+					"Alerta"=>"simple",
+					"Titulo"=>"Ocurrió un error inesperado",
+					"Texto"=>"No hemos podido eliminar el usuario, por favor intente nuevamente",
+					"Tipo"=>"error"
+				];
+			}
+			echo json_encode($alerta);
+		}
 	}
